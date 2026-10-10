@@ -35,7 +35,7 @@
 
 /* ON/OFF 检测：1 为 PB0 数字输入（高按下、低松开），0 为原 ADC 方式。 */
 #ifndef ON_OFF_DIGITAL_EN
-#define ON_OFF_DIGITAL_EN (1)
+#define ON_OFF_DIGITAL_EN (0)
 #endif
 #define ON_OFF_DEBOUNCE_MS (10) /* 每毫秒采样，连续稳定 10 次才确认。 */
 #define TRG_OFF_ADC       (TRG_ON_ADC - 50) /* ADC 保留大于 600 开、小于 550 关。 */

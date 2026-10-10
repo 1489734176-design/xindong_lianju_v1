@@ -770,7 +770,7 @@ void pwm_duty_aim_deal(void)
 
 void user_gears_handle(void)
 {
-	#if 1
+	#if 0
 	u8 res=0;
 	res=key_scan();
 	if(res)
