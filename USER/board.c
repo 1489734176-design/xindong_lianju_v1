@@ -49,12 +49,14 @@ void Bsp_Adc_Init(void)
     GPIO_Init(BEMF_W_PORT, &GPIO_InitStructure);
 		
 #if ON_OFF_DIGITAL_EN
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    /* ON/OFF：PB0 高电平按下、低电平松开；下拉使未驱动时默认为松开。 */
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
 #endif
     GPIO_InitStructure.GPIO_Pin = ON_START_PIN;
     GPIO_Init(ON_START_PORT, &GPIO_InitStructure);
 }
 
+/* PA14 按下为低，使用上拉输入；周期读取 IO，不配置外部中断。 */
 static void Bsp_Safety_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -64,6 +66,7 @@ static void Bsp_Safety_Init(void)
     GPIO_InitStructure.GPIO_Pin = SAFETY_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
     GPIO_Init(SAFETY_PORT, &GPIO_InitStructure);
+    /* 上电已按住安全开关，先锁定，后续不得执行桥臂通电自检。 */
     if(SAFETY_PRESSED())
     {
         safety_stop_latched = 1;
@@ -72,7 +75,7 @@ static void Bsp_Safety_Init(void)
 
 void Bsp_Pwm_Low(void)
 {
-    /* Board-specific: PA0/5/6/8/9/10 are the six gate inputs. */
+    /* 本板六路桥臂为 PA0/5/6/8/9/10，切成低电平 GPIO，防止库重新使能 PWM。 */
     GPIO_ResetBits(GPIOA, BLDC1_UH_PIN | BLDC1_VH_PIN | BLDC1_WH_PIN |
                          BLDC1_UL_PIN | BLDC1_VL_PIN | BLDC1_WL_PIN);
     MODIFY_REG(GPIOA->CRL,
@@ -85,6 +88,7 @@ void Bsp_Pwm_Low(void)
         GPIO_CRH_MODE8_0 | GPIO_CRH_MODE9_0 | GPIO_CRH_MODE10_0);
 }
 
+/* 调用方先关闭 MOE 和通道；安全锁定时仅专用硬刹车入口可恢复桥臂复用。 */
 void Bsp_Pwm_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -272,6 +276,7 @@ void EN_Port_Out_L(void)
 void Bsp_Gpio_Init(void)
 {
 	
+    /* 上电先采样安全开关并保持六路输出低电平，再初始化其余 IO。 */
     Bsp_Safety_Init();
     Bsp_Pwm_Low();
     Bsp_Adc_Init();

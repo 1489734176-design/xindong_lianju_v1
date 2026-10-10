@@ -57,3 +57,6 @@
 .\objects\drv_pwm.o: ..\USER\parameter.h
 .\objects\drv_pwm.o: ..\USER\user_control.h
 .\objects\drv_pwm.o: ..\MC_CORE\mc_core.h
+.\objects\drv_pwm.o: ..\MOTOR_CONTROL\motor_control.h
+.\objects\drv_pwm.o: ..\USER\board.h
+.\objects\drv_pwm.o: D:\Users\mym02\AppData\Local\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h

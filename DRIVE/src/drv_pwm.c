@@ -1,6 +1,8 @@
 #include "drv_pwm.h"
 #include "parameter.h"
 #include "user_control.h"
+#include "motor_control.h"
+#include "board.h"
 #define CHANNLLOW       4  //TIME1 TIME2-CCMR1,CCMR2
 #define CHANNLHIGH      5  //TIME1 TIME2-CCMR1,CCMR2
 #define PWM1ENBLE       6  //TIME1 TIME2-CCMR1,CCMR2
@@ -108,7 +110,7 @@ void Drv_pwm_init(TIM_TypeDef * pTim, uint16_t u16Period,uint16_t u16DeadTime)
     /** Enable the TIM1 */
     TIM_Cmd(pTim, ENABLE);
     /** Main Output Enable:Disable the MOE bit */
-    PwmOutputsEnable();
+    PwmOutputsEnable(); /* 初始化也必须服从 PA14 安全锁定。 */
 
 
 
@@ -127,6 +129,7 @@ void Drv_pwm_init(TIM_TypeDef * pTim, uint16_t u16Period,uint16_t u16DeadTime)
 //U+V-=A+B-
 void UH_VL_HPwmLOn(void )
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -140,6 +143,7 @@ void UH_VL_HPwmLOn(void )
 //U+W-=A+C-
 void UH_WL_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -153,6 +157,7 @@ void UH_WL_HPwmLOn(void)
 //V+W-=B+C-
 void VH_WL_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -166,6 +171,7 @@ void VH_WL_HPwmLOn(void)
 //V+U-=B+A-
 void VH_UL_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -179,6 +185,7 @@ void VH_UL_HPwmLOn(void)
 //W+U-=C+A-
 void WH_UL_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -192,6 +199,7 @@ void WH_UL_HPwmLOn(void)
 //W+V-=C+B-
 void WH_VL_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -208,6 +216,7 @@ void WH_VL_HPwmLOn(void)
 
 void UH_VL_HOnLOn(void )
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -221,6 +230,7 @@ void UH_VL_HOnLOn(void )
 //U+W-=A+C-
 void UH_WL_HOnLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -234,6 +244,7 @@ void UH_WL_HOnLOn(void)
 //V+W-=B+C-
 void VH_WL_HOnLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -247,6 +258,7 @@ void VH_WL_HOnLOn(void)
 //V+U-=B+A-
 void VH_UL_HOnLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -260,6 +272,7 @@ void VH_UL_HOnLOn(void)
 //W+U-=C+A-
 void WH_UL_HOnLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -273,6 +286,7 @@ void WH_UL_HOnLOn(void)
 //W+V-=C+B-
 void WH_VL_HOnLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -292,6 +306,7 @@ void WH_VL_HOnLOn(void)
 
 void UL_HOffLOn(void )
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -305,6 +320,7 @@ void UL_HOffLOn(void )
 
 void VL_HOffLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -318,6 +334,7 @@ void VL_HOffLOn(void)
 
 void WL_HOffLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -331,6 +348,7 @@ void WL_HOffLOn(void)
 
 void UH_HOnLOff(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -344,6 +362,7 @@ void UH_HOnLOff(void)
 
 void VH_HOnLOff(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -357,6 +376,7 @@ void VH_HOnLOff(void)
 
 void WH_HOnLOff(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -375,6 +395,7 @@ void WH_HOnLOff(void)
 // 三相导通相序
 void UH_VL_WL_HPwmLOn(void )
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -388,6 +409,7 @@ void UH_VL_WL_HPwmLOn(void )
 //U+W-=A+C-
 void UH_VH_WL_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -401,6 +423,7 @@ void UH_VH_WL_HPwmLOn(void)
 //V+W-=B+C-
 void UL_VH_WL_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -414,6 +437,7 @@ void UL_VH_WL_HPwmLOn(void)
 //V+U-=B+A-
 void UL_VH_WH_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -427,6 +451,7 @@ void UL_VH_WH_HPwmLOn(void)
 //W+U-=C+A-
 void UL_VL_WH_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -440,6 +465,7 @@ void UL_VL_WH_HPwmLOn(void)
 //W+V-=C+B-
 void UH_VL_WH_HPwmLOn(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -453,6 +479,7 @@ void UH_VL_WH_HPwmLOn(void)
 /*------------------------------------------*/
 void Start_Motor(void)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -466,6 +493,7 @@ void Start_Motor(void)
 
 void UVWL_HOffLPwm(void )
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -484,12 +512,9 @@ void Stop_Motor(void)
     TIM1->CCER &= 0xAAAA;
 }
 
-void Brake_Motor(void)
+/* 普通松开 ON/OFF 与安全停机共用完全相同的硬刹车桥臂输出。 */
+static void Brake_Output_Set(void)
 {
-    if(motor_safety_poll())
-    {
-        return;
-    }
     TIM1->CCR1 = 0x00;
     TIM1->CCR2 = 0x00;
     TIM1->CCR3 = 0x00;
@@ -497,6 +522,52 @@ void Brake_Motor(void)
     TIM1->CCMR1BIT.OC2M = CHANNLLOW;//V_H
     TIM1->CCMR2BIT.OC3M = CHANNLLOW;//W_H
     TIM1->CCER |= 0x5555;
+}
+
+void Brake_Motor(void)
+{
+    /* 普通制动入口不能绕过安全锁定，安全刹车使用下面的专用入口。 */
+    if(motor_safety_poll())
+    {
+        return;
+    }
+    Brake_Output_Set();
+}
+
+void Safety_Brake_Motor(uint8_t start)
+{
+    uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+    if(!safety_stop_latched || !safety_brake_active || motor_ipd_active ||
+       motor_control_list.bldc_state != MOTOR_HBRAKE)
+    {
+        __set_PRIMASK(primask);
+        return;
+    }
+    /* 刹车只能在无故障时开放；保护已关闭 MOE 后不再自动重新使能。 */
+    if(user_list.userErr.word != 0 || mc_core_list.MC_error.word != 0 ||
+       machine_error_hold.userErr_hold.word != 0 ||
+       machine_error_hold.MC_error_hold.word != 0 ||
+       (!start && (TIM1->BDTR & TIM_BDTR_MOE) == 0))
+    {
+        safety_brake_active = 0;
+        motor_safety_poll();
+        __set_PRIMASK(primask);
+        return;
+    }
+    if(start)
+    {
+        /* 先关闭运行通道，再恢复引脚复用，设置好固定刹车模式后才使能输出。 */
+        TIM_CtrlPWMOutputs(TIM1, DISABLE);
+        Stop_Motor();
+        Bsp_Pwm_Init();
+    }
+    Brake_Output_Set();
+    if(start)
+    {
+        TIM_CtrlPWMOutputs(TIM1, ENABLE);
+    }
+    __set_PRIMASK(primask);
 }
 
 void Motor_Stop_Break(void)
@@ -510,6 +581,7 @@ void Motor_Stop_Break(void)
 
 void PwmDutyUpdate(uint16_t u16Duty)
 {
+    /* 换相、定位、MOS 自检和制动入口均不能绕过安全锁定。 */
     if(motor_safety_poll())
     {
         return;
@@ -528,6 +600,7 @@ void PwmDutyUpdate(uint16_t u16Duty)
     TIM1->CCR3 = u16Duty;
 }
 
+/* 使能前再次轮询，并保持调用者原中断屏蔽状态，防止锁定与恢复相互覆盖。 */
 void PwmOutputsEnable(void)
 {
     uint32_t primask = __get_PRIMASK();

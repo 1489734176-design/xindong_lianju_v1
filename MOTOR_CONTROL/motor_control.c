@@ -502,6 +502,7 @@ void mos_check_current(u8 mose_check_inedx)
 
 			u8 i=0;
     u16 mos_check_ad=0;
+    /* 自检尚未开放周期中断，每次桥臂通电前主动轮询安全开关。 */
     if(motor_safety_poll())
     {
         return;
@@ -535,6 +536,7 @@ void mos_check_current(u8 mose_check_inedx)
 			ADC_SoftwareStartConvCmd(ADC1, ENABLE);								// 软件触发ADC转换, 获取峰值电流采样值
 			while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == 0);		// 等待ADC转换完成
 			ADC_ClearFlag(ADC1, ADC_FLAG_EOC);										// 清除ADC转换完成标志位
+            /* 自检采样期间触发安全开关，立即停止本次桥臂通电。 */
             if(motor_safety_poll())
             {
                 break;
@@ -574,6 +576,7 @@ void mos_check_current(u8 mose_check_inedx)
 void mose_check(void)
 {
     u8 i=0;
+    /* 上电已按下安全开关时，跳过会给桥臂通电的 MOS 自检。 */
     if(motor_safety_poll())
     {
         return;
@@ -598,6 +601,7 @@ void mose_check(void)
 		ADC_ClearFlag(ADC1, ADC_FLAG_EOC);										// 清除ADC转换完成标志位
    for(i=0;i<6;i++)
 	{
+        /* 锁定后跳过其余桥臂，仍执行函数末尾的 ADC 配置恢复。 */
         if(motor_safety_poll())
         {
             break;
@@ -681,15 +685,37 @@ void MC_Machine_State(void)
 	static u16 sbreak_count=0;
 	static u16 break2stop_count=0;
     static u8 motionless_count=0;
+    static u8 safety_brake_started=0;
 
-    /* Polled every TIM1 update; safety stop bypasses all braking states. */
+    /* 每个 PWM 周期轮询安全开关，锁定时只允许进入硬刹车及其结束过渡。 */
     if(motor_safety_poll())
     {
-        hbreak_count = 0;
-        sbreak_count = 0;
-        break2stop_count = 0;
-        motionless_count = 0;
-        return;
+        if(!safety_brake_active || motor_ipd_active)
+        {
+            hbreak_count = 0;
+            sbreak_count = 0;
+            break2stop_count = 0;
+            motionless_count = 0;
+            safety_brake_started = 0;
+            return;
+        }
+        if(!safety_brake_started)
+        {
+            /* 刹车只初始化一次，不因反复轮询或长按安全开关重置刹车时间。 */
+            hbreak_count = 0;
+            break2stop_count = 0;
+            safety_brake_started = 1;
+            Safety_Brake_Motor(1);
+            if(!safety_brake_active)
+            {
+                safety_brake_started = 0;
+                return;
+            }
+        }
+    }
+    else
+    {
+        safety_brake_started = 0;
     }
 
 	switch (motor_control_list.bldc_state)
@@ -941,18 +967,37 @@ void MC_Machine_State(void)
 		case MOTOR_BRAKE2STOP:
 			Stop_Motor();
 			break2stop_count++;
-			if(break2stop_count>80)//10ms
-			{
-			   	motor_control_list.bldc_state=MOTOR_STOP;
-			}
+            if(break2stop_count>80)//10ms
+            {
+                motor_control_list.bldc_state=MOTOR_STOP;
+                if(safety_stop_latched)
+                {
+                    /* 硬刹车及结束过渡完成，关闭全部输出，但保留重新按键锁定。 */
+                    safety_brake_active=0;
+                    safety_brake_started=0;
+                    motor_safety_poll();
+                }
+            }
 			
 			break;
 				
 		case MOTOR_HBRAKE:
 			mc_core_list.pwm_actual_runing_data=0;
 			motor_control_list.pwm_duty_virtual=0;
-			hbreak_count++;
-			Brake_Motor();
+            hbreak_count++;
+            if(safety_stop_latched)
+            {
+                /* 与 ON/OFF 松开共用 HBrake_Time_MS_CNT 和同一个硬刹车状态。 */
+                Safety_Brake_Motor(0);
+                if(!safety_brake_active)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                Brake_Motor();
+            }
 			if(machine_error_hold.userErr_hold.word!=0||machine_error_hold.MC_error_hold.word!=0)
 			{
 				motor_control_list.bldc_state=MOTOR_BRAKE2STOP;
@@ -991,6 +1036,12 @@ void MC_Machine_State(void)
 
 //				Stop_Motor();
 			
+            if(safety_stop_latched && motor_control_list.bldc_state == MOTOR_BRAKE2STOP)
+            {
+                /* 刹车计时到期立即撤销刹车输出，保持 GPIO 全低直到重新按键。 */
+                motor_safety_poll();
+            }
+
 		break;
 		case MOTOR_SBRAKE:
 			#if 1

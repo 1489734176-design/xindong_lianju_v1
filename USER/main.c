@@ -94,6 +94,7 @@ int main(void)
 
 //    GPIO_LED_Toggle_Sample();
 		u8 i=0;
+        uint32_t ipd_primask;
 //		LED1_ON;
 //		LED2_ON;
 //		LED3_ON;
@@ -114,6 +115,7 @@ int main(void)
 
 		mc_init();
 		CurrentOffsetCalibration();//放user_para_init()完后
+        /* PA7 原上电检测不变；安全允许时才恢复 PWM 复用并执行 MOS 自检。 */
         if(!motor_safety_poll())
         {
             TIM_CtrlPWMOutputs(TIM1, DISABLE);
@@ -137,6 +139,7 @@ int main(void)
 		Volt_Handler();
 		Volt_Handler();
 		Volt_Handler();
+/* 仅保留故障报警，不再执行电量显示初始化。 */
 #if LED_PA14_EN
 		for(i=0;i<5;i++)
 		{
@@ -146,7 +149,7 @@ int main(void)
 		for(i=0;i<20;i++) 
 		{
 			motor_on_off_control();
-			systick_delay_us(1000);
+			systick_delay_us(1000); /* 上电按键消抖同样采用每毫秒一次采样。 */
 		}
 //		user_list.gears_level=2;
     while (1)
@@ -170,7 +173,8 @@ int main(void)
 				error_hold_updata();
 				user_state_control();
 				UO_Led_Handler();
-				if(!motor_safety_poll() && user_list.flag.bits.gToolEn &&
+				/* 最终电机使能再次受安全状态及全部原有故障约束。 */
+                if(!motor_safety_poll() && user_list.flag.bits.gToolEn &&
                    machine_error_hold.userErr_hold.word == 0 &&
                    machine_error_hold.MC_error_hold.word == 0 &&
                    user_list.userErr.word == 0 && mc_core_list.MC_error.word == 0)
@@ -184,13 +188,29 @@ int main(void)
 				}
 //				GPIO_Toggle(GPIOA,GPIO_Pin_4);
 //				GPIO_SetBits(GPIOA,GPIO_Pin_4);
-				if(mc_core_list.ipd_star_flag==1 && !motor_safety_poll())
-				{
-				
-                ipd_detect();
-                mc_core_list.ipd_star_flag=0;
-                motor_safety_poll();
-				}
+                /* 原子确认定位入口；库未返回时，安全停机先关驱动，暂不通电刹车。 */
+                if(mc_core_list.ipd_star_flag==1)
+                {
+                    ipd_primask=__get_PRIMASK();
+                    __disable_irq();
+                    if(mc_core_list.ipd_star_flag==1 && !motor_safety_poll())
+                    {
+                        motor_ipd_active=1;
+                    }
+                    __set_PRIMASK(ipd_primask);
+                    if(motor_ipd_active)
+                    {
+                        ipd_detect();
+                        ipd_primask=__get_PRIMASK();
+                        __disable_irq();
+                        mc_core_list.ipd_star_flag=0;
+                        motor_ipd_active=0;
+                        /* 库退出后仍保持运行锁定，下一 PWM 周期只允许执行安全硬刹车。 */
+                        motor_safety_poll();
+                        __set_PRIMASK(ipd_primask);
+                    }
+                }
+
 				
 				
 //				GPIO_ResetBits(GPIOA,GPIO_Pin_4);

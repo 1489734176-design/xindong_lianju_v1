@@ -27,16 +27,18 @@
 
 #define  SLEEP_TIME                 				15000ul//10000   
 #define LED_SCAN_EN       (1)
-#define LED_PA14_EN       (0) /* PA14 belongs to the safety switch. */
+/* PA14 专用于安全输入，关闭涉及 PA14 的 LED 驱动及电量、档位显示。 */
+#define LED_PA14_EN       (0)
 #if LED_PA14_EN
 #error PA14 LED drive conflicts with the safety switch
 #endif
 
+/* ON/OFF 检测：1 为 PB0 数字输入（高按下、低松开），0 为原 ADC 方式。 */
 #ifndef ON_OFF_DIGITAL_EN
-#define ON_OFF_DIGITAL_EN (1) /* 1: low-active PB0 GPIO; 0: original PB0 ADC. */
+#define ON_OFF_DIGITAL_EN (1)
 #endif
-#define ON_OFF_DEBOUNCE_MS (10)
-#define TRG_OFF_ADC       (TRG_ON_ADC - 50)
+#define ON_OFF_DEBOUNCE_MS (10) /* 每毫秒采样，连续稳定 10 次才确认。 */
+#define TRG_OFF_ADC       (TRG_ON_ADC - 50) /* ADC 保留大于 600 开、小于 550 关。 */
 
 #define PWM_DUTY_GEARS1    (u32)(32768*0.6f)    
 #define PWM_DUTY_GEARS2    (u32)(32768*0.8f) 

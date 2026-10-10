@@ -14,6 +14,7 @@ void LED4_BRIGHT(void);
 void LED5_BRIGHT(void);
 void LED6_BRIGHT(void);
 
+/* 关闭所有需要驱动或扫描 PA14 的 LED 路径，避免改写安全输入。 */
 #if LED_PA14_EN
 #define LED1_BRIGHT_MAP LED5_BRIGHT()
 #define LED2_BRIGHT_MAP LED4_BRIGHT()
@@ -35,12 +36,15 @@ void led_init(void)
     RCC_AHBPeriphClockCmd(RCC_AHBENR_GPIOA, ENABLE);
 
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource13, GPIO_AF_7);
+/* 关闭所有需要驱动或扫描 PA14 的 LED 路径，避免改写安全输入。 */
 #if LED_PA14_EN
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource14, GPIO_AF_7);
 #endif
 
     GPIO_StructInit(&GPIO_InitStruct);
+    /* 故障报警仅使用 PA1/PA13，不再将 PA14 初始化为输出。 */
     GPIO_InitStruct.GPIO_Pin = LED_PIN1 | LED_PIN2;
+/* 关闭所有需要驱动或扫描 PA14 的 LED 路径，避免改写安全输入。 */
 #if LED_PA14_EN
     GPIO_InitStruct.GPIO_Pin |= LED_PIN3;
 #endif
@@ -110,6 +114,7 @@ void LED1_BRIGHT(void)
 {
 		LED_PIN1_OUT();	
 		LED_PIN2_OUT();
+/* 关闭所有需要驱动或扫描 PA14 的 LED 路径，避免改写安全输入。 */
 #if LED_PA14_EN
 		LED_PIN3_IN();
 #endif
@@ -122,6 +127,7 @@ void LED2_BRIGHT(void)
 {
 		LED_PIN1_OUT();	
 		LED_PIN2_OUT();
+/* 关闭所有需要驱动或扫描 PA14 的 LED 路径，避免改写安全输入。 */
 #if LED_PA14_EN
 		LED_PIN3_IN();
 #endif
@@ -132,6 +138,7 @@ void LED2_BRIGHT(void)
 }
 
 
+/* 关闭所有需要驱动或扫描 PA14 的 LED 路径，避免改写安全输入。 */
 #if LED_PA14_EN
 void LED3_BRIGHT(void)
 {
@@ -244,6 +251,7 @@ void LED_Scan(void)
 void LED_Scan(void)
 {
     static uint8_t direction = 0;
+    /* PA1/PA13 之间的两只灯交替扫描，沿用原故障闪烁节奏。 */
     LED_PIN1_IN();
     LED_PIN2_IN();
     direction ^= 1;
@@ -264,6 +272,7 @@ void LED_Scan(void)
 
 void UO_Led_Handler(void)
 {
+/* 仅保留故障报警，取消电量和档位显示；档位控制功能不变。 */
 #if !LED_PA14_EN
     if(user_list.user_state != TOOL_POWER_DOWN &&
        LedError_Control() && user_list.flag.bits.gToolTrigger)

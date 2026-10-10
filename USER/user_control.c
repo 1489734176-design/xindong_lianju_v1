@@ -13,7 +13,10 @@ u32	pwm_duty_aim_PI_OUT=0;
 User_list_Struct user_list;
 
 Machine_ERROR_HOLD machine_error_hold;
+/* 安全锁定独立于原故障位；中断置位，只能经松开后重新按键解除。 */
 volatile uint8_t safety_stop_latched = 0;
+volatile uint8_t safety_brake_active = 0;
+volatile uint8_t motor_ipd_active = 0;
 static volatile uint8_t safety_release_count = 0;
 static volatile uint8_t safety_restart_ready = 0;
 
@@ -980,9 +983,11 @@ void user_WrenchKey_Handler(void)
 	
 
 }
+/* 安全开关触发后禁止驱动运行，但允许与 ON/OFF 松开相同的硬刹车停转。 */
 uint8_t motor_safety_poll(void)
 {
     uint32_t primask;
+    uint8_t first_trip = 0;
     uint8_t pressed = SAFETY_PRESSED();
     if(!pressed && !safety_stop_latched)
     {
@@ -993,15 +998,20 @@ uint8_t motor_safety_poll(void)
     __disable_irq();
     if(pressed)
     {
+        if(!safety_stop_latched)
+        {
+            first_trip = 1;
+            /* 只对正在运行或停机过程中的电机发起一次刹车；上电锁定不通电。 */
+            safety_brake_active = (motor_control_list.hbrake_en &&
+                                   motor_control_list.bldc_state != MOTOR_STOP);
+        }
         safety_stop_latched = 1;
         safety_restart_ready = 0;
         safety_release_count = 0;
     }
     if(safety_stop_latched)
     {
-        TIM_CtrlPWMOutputs(TIM1, DISABLE);
-        Stop_Motor();
-        Bsp_Pwm_Low();
+        /* 定位和换相仍全部禁止，motor_en 保持为零，不能借刹车重新启动。 */
         TIM_ITConfig(TIM14, TIM_IT_Update, DISABLE);
         TIM_ClearITPendingBit(TIM14, TIM_IT_Update);
         mc_core_list.motor_en = 0;
@@ -1011,7 +1021,35 @@ uint8_t motor_safety_poll(void)
         mc_core_list.bldc_bemf_detected = 0;
         mc_core_list.pwm_actual_runing_data = 0;
         motor_control_list.pwm_duty_virtual = 0;
-        motor_control_list.bldc_state = MOTOR_STOP;
+
+        /* 原故障优先关闭桥臂，禁止为了刹车重新开放过流等保护关闭的输出。 */
+        if(user_list.userErr.word != 0 || mc_core_list.MC_error.word != 0 ||
+           machine_error_hold.userErr_hold.word != 0 ||
+           machine_error_hold.MC_error_hold.word != 0)
+        {
+            safety_brake_active = 0;
+        }
+        if(safety_brake_active)
+        {
+            /* 已进入刹车结束过渡时不重置状态，长按安全开关也不重复计时。 */
+            if(motor_control_list.bldc_state != MOTOR_BRAKE2STOP)
+            {
+                motor_control_list.bldc_state = MOTOR_HBRAKE;
+            }
+        }
+        else
+        {
+            motor_control_list.bldc_state = MOTOR_STOP;
+        }
+
+        /* 首次触发先撤销运行输出；定位未返回、刹车结束或故障时保持六路全低。 */
+        if(first_trip || !safety_brake_active || motor_ipd_active ||
+           motor_control_list.bldc_state == MOTOR_BRAKE2STOP)
+        {
+            TIM_CtrlPWMOutputs(TIM1, DISABLE);
+            Stop_Motor();
+            Bsp_Pwm_Low();
+        }
     }
     __set_PRIMASK(primask);
     return safety_stop_latched;
@@ -1025,16 +1063,19 @@ void motor_on_off_control(void)
     uint8_t released;
     uint32_t primask = __get_PRIMASK();
 
-    /* Serialize release/repress qualification with ISR safety trips. */
+    /* 按键消抖和解锁与中断内安全锁定互斥，避免锁定状态被旧计数覆盖。 */
     __disable_irq();
     motor_safety_poll();
 #if ON_OFF_DIGITAL_EN
-    pressed = (GPIO_ReadInputDataBit(ON_START_PORT, ON_START_PIN) == Bit_RESET);
+    /* 最新接线：PB0 高电平表示按下，低电平表示松开。 */
+    pressed = ON_OFF_PRESSED();
     released = !pressed;
 #else
+    /* ADC 方式仍为大于 600 开、小于 550 关，保持原滞回阈值。 */
     pressed = (user_list.on_start_adc > TRG_ON_ADC);
     released = (user_list.on_start_adc < TRG_OFF_ADC);
 #endif
+    /* 连续稳定约 10ms 才改变按键状态，计数饱和避免长按回卷。 */
     if(released)
     {
         trigger_on_count = 0;
@@ -1061,13 +1102,14 @@ void motor_on_off_control(void)
     }
     else
     {
-        /* Keep ADC hysteresis; debounce samples must be consecutive. */
+        /* ADC 滞回区保持按键状态，但连续消抖计数重新开始。 */
         trigger_off_count = 0;
         trigger_on_count = 0;
     }
 
     if(safety_stop_latched)
     {
+        /* 安全已松开且 ON/OFF 已确认松开，才接受随后重新按下。 */
         if(!SAFETY_PRESSED() && released)
         {
             if(safety_release_count < ON_OFF_DEBOUNCE_MS)
@@ -1086,18 +1128,21 @@ void motor_on_off_control(void)
         if(safety_restart_ready && pressed &&
            trigger_on_count >= ON_OFF_DEBOUNCE_MS)
         {
-            /* A press during another fault is consumed, not deferred. */
+            /* 刹车未结束或其他故障未解除时，本次按下无效，须再次松开后重新按下。 */
             safety_restart_ready = 0;
-            if(!SAFETY_PRESSED() && user_list.userErr.word == 0 &&
+            if(!SAFETY_PRESSED() && !safety_brake_active && !motor_ipd_active &&
+               motor_control_list.bldc_state == MOTOR_STOP &&
+               user_list.userErr.word == 0 &&
                mc_core_list.MC_error.word == 0 &&
                machine_error_hold.userErr_hold.word == 0 &&
                machine_error_hold.MC_error_hold.word == 0)
             {
+                /* 先确保桥臂关闭，再恢复引脚复用，随后由原状态机重新启动。 */
                 TIM_CtrlPWMOutputs(TIM1, DISABLE);
                 Stop_Motor();
                 safety_stop_latched = 0;
                 Bsp_Pwm_Init();
-                PwmOutputsEnable();
+                PwmOutputsEnable(); /* 输出恢复也不能绕过安全停机锁定。 */
             }
         }
         motor_safety_poll();
@@ -1114,6 +1159,7 @@ void error_hold_updata(void)
 
 void user_state_control(void)
 {
+    /* 安全锁定优先撤销工具使能，保留原故障检测及松手恢复逻辑。 */
     if(safety_stop_latched)
     {
         user_list.flag.bits.gToolEn = 0;
@@ -1142,7 +1188,8 @@ void user_state_control(void)
 										user_list.flag.bits.gAutoStop =0;
 									}
 						}
-						else if(user_list.flag.bits.gToolTrigger && !safety_stop_latched &&
+						/* 启动同时受安全锁定、实时故障及锁存故障约束。 */
+                        else if(user_list.flag.bits.gToolTrigger && !safety_stop_latched &&
                                 machine_error_hold.MC_error_hold.word == 0 &&
                                 machine_error_hold.userErr_hold.word == 0 &&
                                 mc_core_list.MC_error.word == 0 && user_list.userErr.word == 0)
@@ -1173,7 +1220,7 @@ void user_state_control(void)
 									{
 									
 										machine_error_hold.userErr_hold.bits.gIBusAcmpOCP=0;
-										PwmOutputsEnable();
+										PwmOutputsEnable(); /* 输出恢复也不能绕过安全停机锁定。 */
 									}
 //									mc_core_list.MC_error.word=0;
 //									machine_error_hold.MC_error_hold.word=0;
@@ -1234,10 +1281,11 @@ void user_state_control(void)
 							{
 									
 									machine_error_hold.userErr_hold.bits.gIBusAcmpOCP=0;
-									PwmOutputsEnable();
+									PwmOutputsEnable(); /* 输出恢复也不能绕过安全停机锁定。 */
 							}
 						
-							if(user_list.flag.bits.gToolTrigger && !safety_stop_latched)
+							/* 安全锁定时不得通过 ON/OFF 唤醒路径重新启动。 */
+                            if(user_list.flag.bits.gToolTrigger && !safety_stop_latched)
 							{
 									if(machine_error_hold.MC_error_hold.word!=0||machine_error_hold.userErr_hold.word!=0)
 									{
@@ -1259,7 +1307,7 @@ void user_state_control(void)
 							{
 									
 									machine_error_hold.userErr_hold.bits.gIBusAcmpOCP=0;
-									PwmOutputsEnable();
+									PwmOutputsEnable(); /* 输出恢复也不能绕过安全停机锁定。 */
 							}
 						
 							}

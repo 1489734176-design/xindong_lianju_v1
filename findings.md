@@ -1,5 +1,25 @@
 # Findings
 
+## Safety hard-brake synchronization
+- Latest user request supersedes the previous coast/all-six-low stopping interval. ON/OFF release now uses enabled `HBrake_En=1`; shared hard-brake hold is `HBrake_Time_MS_CNT` (400 ms), with the existing brake-to-stop state afterward.
+- Current `motor_safety_poll()` forces MOTOR_STOP, MOE-off and GPIO-low on every call, and every `Brake_Motor()` entry is guarded, so simply changing the state is insufficient.
+- Reuse the existing MOTOR_HBRAKE / MOTOR_BRAKE2STOP states and counters; add a tightly scoped, fixed-brake-only driver entry while keeping all normal driver callbacks/core ISRs blocked by the latch.
+- Safety event during a non-STOP motor state requests braking once. Boot-held or already-stopped safety does not energize a bridge. Existing current faults and fault latches cancel safety braking and keep all outputs off.
+- Track main's blocking IPD execution separately. Clamp outputs during in-flight IPD and do not energize the brake until the binary routine returns; its pulse callbacks remain blocked.
+- Do not clear the restart latch until the brake is finished and a valid release/repress occurs. Pressing during braking consumes that attempt instead of deferring a restart.
+- Continue GBK Chinese comments and source-only modifications; no static checker/tests/build/flash.
+
+## Resumption after write permission restored
+- Actual source already has the earlier safety polling and low-active PB0 code. Failed old-script application inserted duplicate definitions into parameter.h, board.h, user_control.h before stopping at drv_pwm.h. Merge these duplicates in place, not a baseline rollback.
+- Targeted edits now: PB0 pressed uses Bit_SET / ON_OFF_PRESSED(), GPIO_Mode_IPD, coherent Chinese GBK comments on the prior safety/ADC/LED changes. PA14 remains low-active as agreed; remove the conflicting duplicate active-high SAFETY_PRESSED definition.
+- Reads are limited to obtaining current edit anchors; no static analysis, test, compile, or firmware flashing is requested/performed.
+
+## Latest user correction
+- PB0 ON/OFF is HIGH when pressed, LOW when released (supersedes all earlier low-active PB0 notes). Digital input uses pull-down; ADC fallback remains >600 ON / <550 OFF.
+- Add Chinese comments to the implementation changes, encoded as GBK/CP936.
+- User explicitly requests no static checking and no compilation. Do not run further audits/tests/builds; make source edits only.
+- Source diff on resumption is empty: previous attempted firmware writes did not execute. Implement the agreed feature set using the corrected polarity.
+
 ## Requirements clarified by second screenshot (2026-10-10)
 - PB0 default digital input: low = pressed, high = released, about 10 ms debounce; macro fallback to current ADC >600 ON / <550 OFF. Remove PB0 from ADC scan in digital mode and update subsequent channel ranks. PA7 fly-machine boot check stays unchanged.
 - PA14 exclusively safety input: LOW means pressed/stop. No EXTI14 per later user override; poll periodically. Existing PA4 protection interrupt remains.

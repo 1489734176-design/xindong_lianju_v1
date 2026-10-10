@@ -17,6 +17,7 @@ void drv_adc_init(void)
 
     ADC_SampleTimeConfig(ADC1, ADC_SampleTime_3_5);
 
+    /* 参数是最后一个序号：数字按键 7 通道，ADC 按键 8 通道。 */
     ADC_AnyChannelNumCfg(ADC1, ADC_SCAN_LAST_RANK);
     ADC_AnyChannelSelect(ADC1, BEMF_U_RANK, BEMF_U_CHANNEL);
     ADC_AnyChannelSelect(ADC1, BEMF_V_RANK, BEMF_V_CHANNEL);
@@ -26,6 +27,7 @@ void drv_adc_init(void)
 		ADC_AnyChannelSelect(ADC1, TMOS_RANK, TMOS_CHANNEL);
 		
     ADC_AnyChannelSelect(ADC1, SPEED_RANK, SPEED_CHANNEL);
+/* 数字方式 PB0 保持下拉输入，不加入 ADC 扫描。 */
 #if !ON_OFF_DIGITAL_EN
     ADC_AnyChannelSelect(ADC1, ON_START_RANK, ON_START_CHANNEL);
 #endif

@@ -54,6 +54,7 @@ void Get_ADC_Result()
 	mc_core_list.Board_ADC_DATA.u16VR 				= (uint16_t)GET_ADC_VALUE(SPEED_CHANNEL);
 	mc_core_list.Board_ADC_DATA.u16Vbus	 			= (uint16_t)GET_ADC_VALUE(VBUS_CHANNEL);
 	mc_core_list.Board_ADC_DATA.u16I_Peak 	= (uint16_t)GET_ADC_VALUE(IPEAK_CHANNEL);
+/* 数字方式不读取 PB0 的旧 ADC 值，按键电平由主循环读取。 */
 #if !ON_OFF_DIGITAL_EN
     user_list.on_start_adc = (uint16_t)GET_ADC_VALUE(ON_START_CHANNEL);
 #endif
@@ -213,6 +214,7 @@ void ADC_IRQHandler(void)
 			
 			}
 		#endif
+                /* 保留 ADC 采样及过流处理，锁定时禁止进入电机库换相。 */
                 if(!motor_safety_poll())
                 {
                     mc_core_adc_isr_handle();
@@ -229,6 +231,7 @@ void TIM14_IRQHandler(void)
     if (RESET != TIM_GetITStatus(TIM14, TIM_IT_Update))
     {
 		
+            /* 已挂起的换相定时中断也必须服从安全锁定。 */
             if(!motor_safety_poll())
             {
                 mc_core_timer14_isr_handle();

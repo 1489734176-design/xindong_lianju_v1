@@ -109,7 +109,7 @@
 #define Sbrake_Duty_Min                                     (u16)(PWM_PRIOD_LOAD*0.1f)/*0-32768刹车占空比*/
 #define Sbrake_Time_MS                                          (200*SLOWLOOP_1ms_CNT_LOAD)/*软刹车时间 uint:ms*/   
  
-#define HBrake_En                                               (0)/*硬刹车使能*/
+#define HBrake_En                                               (1)/*硬刹车使能*/
 #define HBrake_MIN_Time_MS_CNT                                      (155*SLOWLOOP_1ms_CNT_LOAD)/*硬刹车时间 uint:ms*/
 #define HBrake_Time_MS_CNT                                          (400*SLOWLOOP_1ms_CNT_LOAD)/*硬刹车时间 uint:ms*/
     

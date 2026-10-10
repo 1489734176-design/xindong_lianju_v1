@@ -11,6 +11,7 @@
 #define LED_PIN2_PORT                   GPIOA
 #define LED_PIN2                    GPIO_Pin_13
 
+/* PA14 专作安全输入，禁止 LED 改写其方向或输出电平。 */
 #if LED_PA14_EN
 #define LED_PIN3_PORT                   GPIOA
 #define LED_PIN3                   GPIO_Pin_14
@@ -19,12 +20,14 @@
 #if(1)
 #define LED_PIN1_OUT()  MODIFY_REG(GPIOA->CRL, GPIO_CRL_MODE1, 0x01U << GPIO_CRL_MODE1_Pos)
 #define LED_PIN2_OUT()  MODIFY_REG(GPIOA->CRH, GPIO_CRH_MODE13, 0x01U << GPIO_CRH_MODE13_Pos)
+/* PA14 专作安全输入，禁止 LED 改写其方向或输出电平。 */
 #if LED_PA14_EN
 #define LED_PIN3_OUT()  MODIFY_REG(GPIOA->CRH, GPIO_CRH_MODE14, 0x01U << GPIO_CRH_MODE14_Pos)
 #endif
 
 #define LED_PIN1_IN()  MODIFY_REG(GPIOA->CRL, GPIO_CRL_MODE1, 0x00U << GPIO_CRL_MODE1_Pos)
 #define LED_PIN2_IN()  MODIFY_REG(GPIOA->CRH, GPIO_CRH_MODE13, 0x00U << GPIO_CRH_MODE13_Pos)
+/* PA14 专作安全输入，禁止 LED 改写其方向或输出电平。 */
 #if LED_PA14_EN
 #define LED_PIN3_IN()  MODIFY_REG(GPIOA->CRH, GPIO_CRH_MODE14, 0x00U << GPIO_CRH_MODE14_Pos)
 #endif
@@ -35,9 +38,11 @@
 #define LED_PIN2_HIGHT() WRITE_REG(GPIOA->BSRR, GPIO_BSRR_BS13)
 #define LED_PIN2_LOW()   WRITE_REG(GPIOA->BRR, GPIO_BRR_BR13)
 
+/* PA14 专作安全输入，禁止 LED 改写其方向或输出电平。 */
 #if LED_PA14_EN
 #define LED_PIN3_HIGHT() WRITE_REG(GPIOA->BSRR, GPIO_BSRR_BS14)
 #endif
+/* PA14 专作安全输入，禁止 LED 改写其方向或输出电平。 */
 #if LED_PA14_EN
 #define LED_PIN3_LOW()   WRITE_REG(GPIOA->BRR, GPIO_BRR_BR14)
 #endif

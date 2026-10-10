@@ -124,7 +124,11 @@ extern User_list_Struct user_list;
 extern Machine_ERROR_HOLD machine_error_hold;
 void user_direction_handle(void);
 void motor_on_off_control(void);
+/* 安全锁定独立于原故障位，只能在安全松开后经重新按键解除。 */
 extern volatile uint8_t safety_stop_latched;
+/* 锁定期间只允许硬刹车；定位库尚未返回时暂不接通刹车桥臂。 */
+extern volatile uint8_t safety_brake_active;
+extern volatile uint8_t motor_ipd_active;
 uint8_t motor_safety_poll(void);
 void user_state_control(void);
 void user_oc_handle(void);

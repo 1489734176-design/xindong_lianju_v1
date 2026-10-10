@@ -11,7 +11,7 @@
 #define SET_CCR4_VAL(Value)         WRITE_REG(TIM1->CCR4, Value)
 
 #define DISABLE_PWMOUT()            CLEAR_BIT(TIM1->BDTR, TIM_BDTR_MOE_Msk)
-#define ENABLE_PWMOUT()             PwmOutputsEnable()
+#define ENABLE_PWMOUT()             PwmOutputsEnable() /* 所有输出恢复先判断安全锁定。 */
 
 #define READ_TIM1_UPDATE_FLAG()     READ_BIT(TIM1->SR, TIM_IT_Update)
 #define CLEAN_TIM1_UPDATE_FLAG()    CLEAR_BIT(TIM1->SR, TIM_IT_Update)
@@ -62,9 +62,11 @@ void UVWL_HOffLPwm(void );
 
 void Start_Motor(void);
 void Stop_Motor(void);
-void PwmOutputsEnable(void);
+void PwmOutputsEnable(void); /* 故障恢复及唤醒统一使用受安全锁定约束的入口。 */
 
 void Brake_Motor(void);
+/* 安全锁定中的固定硬刹车输出，不能作为运行 PWM 使能入口。 */
+void Safety_Brake_Motor(uint8_t start);
 void PwmDutyUpdate(uint16_t u16Duty);
 
 

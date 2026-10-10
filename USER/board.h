@@ -29,6 +29,7 @@
 
 
 #define VBUS_CHANNEL                ADC_Channel_0  	
+/* 数字方式不采样 PB0；母线电压序号前移，ADC 方式保留原 8 通道。 */
 #if ON_OFF_DIGITAL_EN
 #define VBUS_RANK                   (6)
 #define ADC_SCAN_LAST_RANK          (6)
@@ -36,7 +37,6 @@
 #define VBUS_RANK                   (7)
 #define ADC_SCAN_LAST_RANK          (7)
 #endif
-
 
 
 //#define  DIR_CHANNEL                ADC_Channel_7 	
@@ -66,11 +66,13 @@
 
 #define ON_START_PORT                   GPIOB
 #define ON_START_PIN                    GPIO_Pin_0
-
+/* ON/OFF：PB0 按下为高、松开为低；安全开关：PA14 按下为低。 */
+#define ON_OFF_PRESSED()            (GPIO_ReadInputDataBit(ON_START_PORT, ON_START_PIN) == Bit_SET)
 #define SAFETY_PORT                 GPIOA
 #define SAFETY_PIN                  GPIO_Pin_14
 #define SAFETY_PIN_SOURCE           GPIO_PinSource14
-#define SAFETY_PRESSED()            (GPIO_ReadInputDataBit(SAFETY_PORT, SAFETY_PIN) == Bit_SET)
+#define SAFETY_PRESSED()            (GPIO_ReadInputDataBit(SAFETY_PORT, SAFETY_PIN) == Bit_RESET)
+
 
 //dir
 
@@ -183,7 +185,7 @@
 
 void Bsp_Gpio_Init(void);
 void Bsp_Pwm_Init(void);
-void Bsp_Pwm_Low(void);
+void Bsp_Pwm_Low(void); /* 六路桥臂引脚切换为普通低电平输出。 */
 void Peripheral_Init(void);
 void Interrupt_Init(void);
 void GPIO_Toggle(GPIO_TypeDef *GPIOn, uint16_t PINn);
