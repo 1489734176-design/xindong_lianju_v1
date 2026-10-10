@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "mm32_device.h"
 #include "hal_conf.h"
+#include "parameter.h"
 #define LED_RCC_CLOCKGPIO          (RCC_AHBENR_GPIOA_Msk)
 #define LED_PIN1_PORT                   GPIOA
 #define LED_PIN1                    GPIO_Pin_1
@@ -10,17 +11,23 @@
 #define LED_PIN2_PORT                   GPIOA
 #define LED_PIN2                    GPIO_Pin_13
 
+#if LED_PA14_EN
 #define LED_PIN3_PORT                   GPIOA
 #define LED_PIN3                   GPIO_Pin_14
+#endif
 
 #if(1)
 #define LED_PIN1_OUT()  MODIFY_REG(GPIOA->CRL, GPIO_CRL_MODE1, 0x01U << GPIO_CRL_MODE1_Pos)
 #define LED_PIN2_OUT()  MODIFY_REG(GPIOA->CRH, GPIO_CRH_MODE13, 0x01U << GPIO_CRH_MODE13_Pos)
+#if LED_PA14_EN
 #define LED_PIN3_OUT()  MODIFY_REG(GPIOA->CRH, GPIO_CRH_MODE14, 0x01U << GPIO_CRH_MODE14_Pos)
+#endif
 
 #define LED_PIN1_IN()  MODIFY_REG(GPIOA->CRL, GPIO_CRL_MODE1, 0x00U << GPIO_CRL_MODE1_Pos)
 #define LED_PIN2_IN()  MODIFY_REG(GPIOA->CRH, GPIO_CRH_MODE13, 0x00U << GPIO_CRH_MODE13_Pos)
+#if LED_PA14_EN
 #define LED_PIN3_IN()  MODIFY_REG(GPIOA->CRH, GPIO_CRH_MODE14, 0x00U << GPIO_CRH_MODE14_Pos)
+#endif
 
 #define LED_PIN1_HIGHT() WRITE_REG(GPIOA->BSRR, GPIO_BSRR_BS1)
 #define LED_PIN1_LOW()   WRITE_REG(GPIOA->BRR, GPIO_BRR_BR1)
@@ -28,8 +35,12 @@
 #define LED_PIN2_HIGHT() WRITE_REG(GPIOA->BSRR, GPIO_BSRR_BS13)
 #define LED_PIN2_LOW()   WRITE_REG(GPIOA->BRR, GPIO_BRR_BR13)
 
+#if LED_PA14_EN
 #define LED_PIN3_HIGHT() WRITE_REG(GPIOA->BSRR, GPIO_BSRR_BS14)
+#endif
+#if LED_PA14_EN
 #define LED_PIN3_LOW()   WRITE_REG(GPIOA->BRR, GPIO_BRR_BR14)
+#endif
 #endif
 typedef union
 {

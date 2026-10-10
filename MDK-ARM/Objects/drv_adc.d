@@ -57,3 +57,4 @@
 .\objects\drv_adc.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_usart.h
 .\objects\drv_adc.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_uid.h
 .\objects\drv_adc.o: ..\USER\board.h
+.\objects\drv_adc.o: ..\USER\parameter.h

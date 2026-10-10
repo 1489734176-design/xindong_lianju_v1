@@ -21,13 +21,26 @@ Target DLL:      CMSIS_AGDI.dll V1.33.21.0
 Dialog DLL:      TARMCM1.DLL V1.14.6.0
  
 <h2>Project:</h2>
-D:\mym\NXN\xindong\source code\NX32F001T-½ÇÄ¥V2_01\NX32F001T-½ÇÄ¥V2_01\MDK-ARM\BLDC-6Step.uvprojx
+D:\mym\NXN\xindong\source code\NX32G0001\MDK-ARM\BLDC-6Step.uvprojx
 Project File Date:  10/09/2026
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\Users\mym02\AppData\Local\Keil_v5\ARM\ARMCC\Bin'
 Build target 'Target 1'
-".\Objects\BLDC-6Step.axf" - 0 Error(s), 0 Warning(s).
+compiling board.c...
+compiling mm32g0001_it.c...
+compiling main.c...
+compiling drv_adc.c...
+compiling led.c...
+..\USER\led.c(396): warning:  #177-D: variable "i"  was declared but never referenced
+  	uint8_t i;
+..\USER\led.c: 1 warning, 0 errors
+compiling motor_control.c...
+compiling user_control.c...
+linking...
+Program Size: Code=14520 RO-data=224 RW-data=148 ZI-data=1092  
+FromELF: creating hex file...
+".\Objects\BLDC-6Step.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -39,7 +52,7 @@ Package Vendor: MindMotion
 <h2>Collection of Component include folders:</h2>
 
 <h2>Collection of Component Files used:</h2>
-Build Time Elapsed:  00:00:00
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>

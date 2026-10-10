@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "mm32_device.h"
 #include "hal_conf.h"
+#include "parameter.h"
 /** ADC interface */
 #define BEMF_U_CHANNEL              ADC_Channel_4 	
 #define BEMF_U_RANK                 (0)
@@ -28,7 +29,13 @@
 
 
 #define VBUS_CHANNEL                ADC_Channel_0  	
+#if ON_OFF_DIGITAL_EN
+#define VBUS_RANK                   (6)
+#define ADC_SCAN_LAST_RANK          (6)
+#else
 #define VBUS_RANK                   (7)
+#define ADC_SCAN_LAST_RANK          (7)
+#endif
 
 
 
@@ -59,6 +66,11 @@
 
 #define ON_START_PORT                   GPIOB
 #define ON_START_PIN                    GPIO_Pin_0
+
+#define SAFETY_PORT                 GPIOA
+#define SAFETY_PIN                  GPIO_Pin_14
+#define SAFETY_PIN_SOURCE           GPIO_PinSource14
+#define SAFETY_PRESSED()            (GPIO_ReadInputDataBit(SAFETY_PORT, SAFETY_PIN) == Bit_SET)
 
 //dir
 
@@ -171,6 +183,7 @@
 
 void Bsp_Gpio_Init(void);
 void Bsp_Pwm_Init(void);
+void Bsp_Pwm_Low(void);
 void Peripheral_Init(void);
 void Interrupt_Init(void);
 void GPIO_Toggle(GPIO_TypeDef *GPIOn, uint16_t PINn);

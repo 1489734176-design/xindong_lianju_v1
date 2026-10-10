@@ -1,5 +1,6 @@
 #include "drv_pwm.h"
 #include "parameter.h"
+#include "user_control.h"
 #define CHANNLLOW       4  //TIME1 TIME2-CCMR1,CCMR2
 #define CHANNLHIGH      5  //TIME1 TIME2-CCMR1,CCMR2
 #define PWM1ENBLE       6  //TIME1 TIME2-CCMR1,CCMR2
@@ -107,7 +108,7 @@ void Drv_pwm_init(TIM_TypeDef * pTim, uint16_t u16Period,uint16_t u16DeadTime)
     /** Enable the TIM1 */
     TIM_Cmd(pTim, ENABLE);
     /** Main Output Enable:Disable the MOE bit */
-    TIM_CtrlPWMOutputs(pTim, ENABLE);
+    PwmOutputsEnable();
 
 
 
@@ -125,7 +126,11 @@ void Drv_pwm_init(TIM_TypeDef * pTim, uint16_t u16Period,uint16_t u16DeadTime)
 
 //U+V-=A+B-
 void UH_VL_HPwmLOn(void )
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5041;								// UH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = PWM1ENBLE;		// U+Pwm
 	TIM1->CCMR1BIT.OC2M = CHANNLHIGH;		// V-H;	
@@ -134,7 +139,11 @@ void UH_VL_HPwmLOn(void )
 
 //U+W-=A+C-
 void UH_WL_HPwmLOn(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5401;								// UH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = PWM1ENBLE;		// U+Pwm
 	TIM1->CCMR1BIT.OC2M = CHANNLLOW;		
@@ -144,6 +153,10 @@ void UH_WL_HPwmLOn(void)
 //V+W-=B+C-
 void VH_WL_HPwmLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5410;									// VH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLLOW;			
 	TIM1->CCMR1BIT.OC2M = PWM1ENBLE;			// V+pwm
@@ -153,6 +166,10 @@ void VH_WL_HPwmLOn(void)
 //V+U-=B+A-
 void VH_UL_HPwmLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5014;									// VH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;			// U-H	
 	TIM1->CCMR1BIT.OC2M = PWM1ENBLE;			// V+pwm
@@ -161,7 +178,11 @@ void VH_UL_HPwmLOn(void)
 
 //W+U-=C+A-
 void WH_UL_HPwmLOn(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5104;									// WH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;			// U-H	
 	TIM1->CCMR1BIT.OC2M = CHANNLLOW;	
@@ -170,7 +191,11 @@ void WH_UL_HPwmLOn(void)
 
 //W+V-=C+B-
 void WH_VL_HPwmLOn(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5140;									// WH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLLOW;				
 	TIM1->CCMR1BIT.OC2M = CHANNLHIGH;			// V-H		
@@ -182,7 +207,11 @@ void WH_VL_HPwmLOn(void)
 
 
 void UH_VL_HOnLOn(void )
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5041;								// UH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;		// U+Pwm
 	TIM1->CCMR1BIT.OC2M = CHANNLHIGH;		// V-H;	
@@ -191,7 +220,11 @@ void UH_VL_HOnLOn(void )
 
 //U+W-=A+C-
 void UH_WL_HOnLOn(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5401;								// UH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;		// U+H
 	TIM1->CCMR1BIT.OC2M = CHANNLLOW;		
@@ -201,6 +234,10 @@ void UH_WL_HOnLOn(void)
 //V+W-=B+C-
 void VH_WL_HOnLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5410;									// VH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLLOW;			
 	TIM1->CCMR1BIT.OC2M = CHANNLHIGH;			// V+H
@@ -210,6 +247,10 @@ void VH_WL_HOnLOn(void)
 //V+U-=B+A-
 void VH_UL_HOnLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5014;									// VH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;			// U-H	
 	TIM1->CCMR1BIT.OC2M = CHANNLHIGH;			// V+H
@@ -218,7 +259,11 @@ void VH_UL_HOnLOn(void)
 
 //W+U-=C+A-
 void WH_UL_HOnLOn(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5104;									// WH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;			// U-H	
 	TIM1->CCMR1BIT.OC2M = CHANNLLOW;	
@@ -227,7 +272,11 @@ void WH_UL_HOnLOn(void)
 
 //W+V-=C+B-
 void WH_VL_HOnLOn(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5140;									// WH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLLOW;				
 	TIM1->CCMR1BIT.OC2M = CHANNLHIGH;			// V-H		
@@ -242,7 +291,11 @@ void WH_VL_HOnLOn(void)
 
 
 void UL_HOffLOn(void )
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5004;								// UH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;		// 
 	TIM1->CCMR1BIT.OC2M = CHANNLLOW;		// 
@@ -251,7 +304,11 @@ void UL_HOffLOn(void )
 
 
 void VL_HOffLOn(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5040;								// 
 	TIM1->CCMR1BIT.OC1M = CHANNLLOW;		// 
 	TIM1->CCMR1BIT.OC2M = CHANNLHIGH;		
@@ -261,6 +318,10 @@ void VL_HOffLOn(void)
 
 void WL_HOffLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5400;									// 
 	TIM1->CCMR1BIT.OC1M = CHANNLLOW;			
 	TIM1->CCMR1BIT.OC2M = CHANNLLOW;			// 
@@ -270,6 +331,10 @@ void WL_HOffLOn(void)
 
 void UH_HOnLOff(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5001;									// 
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;			// 	
 	TIM1->CCMR1BIT.OC2M = CHANNLLOW;			// 
@@ -278,7 +343,11 @@ void UH_HOnLOff(void)
 ///--------------------------------------------------------------------
 
 void VH_HOnLOff(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5010;									// 
 	TIM1->CCMR1BIT.OC1M = CHANNLLOW;			// 
 	TIM1->CCMR1BIT.OC2M = CHANNLHIGH;	
@@ -287,7 +356,11 @@ void VH_HOnLOff(void)
 
 
 void WH_HOnLOff(void)
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5100;									// 
 	TIM1->CCMR1BIT.OC1M = CHANNLLOW;				
 	TIM1->CCMR1BIT.OC2M = CHANNLLOW;			// 	
@@ -302,6 +375,10 @@ void WH_HOnLOff(void)
 // 三相导通相序
 void UH_VL_WL_HPwmLOn(void )
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 		TIM1->CCER = 0x5441;								// UH 输出使能, 高有效
 		TIM1->CCMR1BIT.OC1M = PWM1ENBLE;		// U+Pwm
 		TIM1->CCMR1BIT.OC2M = CHANNLHIGH;		// V-H;	
@@ -311,6 +388,10 @@ void UH_VL_WL_HPwmLOn(void )
 //U+W-=A+C-
 void UH_VH_WL_HPwmLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 		TIM1->CCER = 0x5411;								// UH 输出使能, 高有效
 		TIM1->CCMR1BIT.OC1M = PWM1ENBLE;		// U+Pwm
 		TIM1->CCMR1BIT.OC2M = PWM1ENBLE;		
@@ -320,6 +401,10 @@ void UH_VH_WL_HPwmLOn(void)
 //V+W-=B+C-
 void UL_VH_WL_HPwmLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5414;									// VH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = CHANNLHIGH;			
 	TIM1->CCMR1BIT.OC2M = PWM1ENBLE;			// V+pwm
@@ -329,6 +414,10 @@ void UL_VH_WL_HPwmLOn(void)
 //V+U-=B+A-
 void UL_VH_WH_HPwmLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 		TIM1->CCER = 0x5114;									// VH 输出使能, 高有效
 		TIM1->CCMR1BIT.OC1M = CHANNLHIGH;			// U-H	
 		TIM1->CCMR1BIT.OC2M = PWM1ENBLE;			// V+pwm
@@ -338,6 +427,10 @@ void UL_VH_WH_HPwmLOn(void)
 //W+U-=C+A-
 void UL_VL_WH_HPwmLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 		TIM1->CCER = 0x5144;									// WH 输出使能, 高有效
 		TIM1->CCMR1BIT.OC1M = CHANNLHIGH;			// U-H	
 		TIM1->CCMR1BIT.OC2M = CHANNLHIGH;	
@@ -347,6 +440,10 @@ void UL_VL_WH_HPwmLOn(void)
 //W+V-=C+B-
 void UH_VL_WH_HPwmLOn(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 		TIM1->CCER = 0x5141;									// WH 输出使能, 高有效
 		TIM1->CCMR1BIT.OC1M = PWM1ENBLE;				
 		TIM1->CCMR1BIT.OC2M = CHANNLHIGH;			// V-H		
@@ -356,6 +453,10 @@ void UH_VL_WH_HPwmLOn(void)
 /*------------------------------------------*/
 void Start_Motor(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
     TIM1->CCR1 = 0x00;
     TIM1->CCR2 = 0x00;
     TIM1->CCR3 = 0x00;
@@ -364,7 +465,11 @@ void Start_Motor(void)
 }
 
 void UVWL_HOffLPwm(void )
-{	
+{
+    if(motor_safety_poll())
+    {
+        return;
+    }
 	TIM1->CCER = 0x5444;								// UH 输出使能, 高有效
 	TIM1->CCMR1BIT.OC1M = PWM1ENBLE;		// 
 	TIM1->CCMR1BIT.OC2M = PWM1ENBLE;		// 
@@ -381,6 +486,10 @@ void Stop_Motor(void)
 
 void Brake_Motor(void)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
     TIM1->CCR1 = 0x00;
     TIM1->CCR2 = 0x00;
     TIM1->CCR3 = 0x00;
@@ -401,6 +510,10 @@ void Motor_Stop_Break(void)
 
 void PwmDutyUpdate(uint16_t u16Duty)
 {
+    if(motor_safety_poll())
+    {
+        return;
+    }
 //    if(u16Duty > MAX_DUTY)
 //    {
 //        u16Duty = MAX_DUTY;
@@ -413,4 +526,15 @@ void PwmDutyUpdate(uint16_t u16Duty)
     TIM1->CCR1 = u16Duty;
     TIM1->CCR2 = u16Duty;
     TIM1->CCR3 = u16Duty;
+}
+
+void PwmOutputsEnable(void)
+{
+    uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+    if(!motor_safety_poll())
+    {
+        TIM_CtrlPWMOutputs(TIM1, ENABLE);
+    }
+    __set_PRIMASK(primask);
 }

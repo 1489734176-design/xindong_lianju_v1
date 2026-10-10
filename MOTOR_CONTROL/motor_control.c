@@ -501,7 +501,11 @@ void mos_check_current(u8 mose_check_inedx)
 {
 
 			u8 i=0;
-			u16 mos_check_ad=0;
+    u16 mos_check_ad=0;
+    if(motor_safety_poll())
+    {
+        return;
+    }
 			switch(mose_check_inedx)
 			{
 				case 0:
@@ -531,7 +535,11 @@ void mos_check_current(u8 mose_check_inedx)
 			ADC_SoftwareStartConvCmd(ADC1, ENABLE);								// 软件触发ADC转换, 获取峰值电流采样值
 			while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == 0);		// 等待ADC转换完成
 			ADC_ClearFlag(ADC1, ADC_FLAG_EOC);										// 清除ADC转换完成标志位
-			mos_check_ad= (uint16_t)GET_ADC_VALUE(IPEAK_CHANNEL);
+            if(motor_safety_poll())
+            {
+                break;
+            }
+            mos_check_ad= (uint16_t)GET_ADC_VALUE(IPEAK_CHANNEL);
 			if(mos_check_ad>mc_core_list.CurrentOffset_ad_data)
 			{
 			
@@ -565,7 +573,11 @@ void mos_check_current(u8 mose_check_inedx)
 
 void mose_check(void)
 {
-		u8 i=0;
+    u8 i=0;
+    if(motor_safety_poll())
+    {
+        return;
+    }
 		Stop_Motor();
 		ADC_Cmd(ADC1, DISABLE);
 		ADC_ITConfig(ADC1, ADC_IT_EOC, DISABLE);		// 关闭ADC转换中断
@@ -586,7 +598,11 @@ void mose_check(void)
 		ADC_ClearFlag(ADC1, ADC_FLAG_EOC);										// 清除ADC转换完成标志位
    for(i=0;i<6;i++)
 	{
-		mos_check_current(i);
+        if(motor_safety_poll())
+        {
+            break;
+        }
+        mos_check_current(i);
 		
 		systick_delay_us(800);
 	}
@@ -664,7 +680,17 @@ void MC_Machine_State(void)
 	static u16 hbreak_count=0;
 	static u16 sbreak_count=0;
 	static u16 break2stop_count=0;
-	static u8 motionless_count=0;
+    static u8 motionless_count=0;
+
+    /* Polled every TIM1 update; safety stop bypasses all braking states. */
+    if(motor_safety_poll())
+    {
+        hbreak_count = 0;
+        sbreak_count = 0;
+        break2stop_count = 0;
+        motionless_count = 0;
+        return;
+    }
 
 	switch (motor_control_list.bldc_state)
 	{

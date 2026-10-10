@@ -55,7 +55,7 @@
 .\objects\led.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_tim.h
 .\objects\led.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_usart.h
 .\objects\led.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_uid.h
+.\objects\led.o: ..\USER\parameter.h
 .\objects\led.o: ..\USER\led.h
 .\objects\led.o: ..\USER\user_control.h
 .\objects\led.o: ..\MC_CORE\mc_core.h
-.\objects\led.o: ..\USER\parameter.h

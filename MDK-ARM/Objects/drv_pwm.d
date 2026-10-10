@@ -55,3 +55,5 @@
 .\objects\drv_pwm.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_usart.h
 .\objects\drv_pwm.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_uid.h
 .\objects\drv_pwm.o: ..\USER\parameter.h
+.\objects\drv_pwm.o: ..\USER\user_control.h
+.\objects\drv_pwm.o: ..\MC_CORE\mc_core.h

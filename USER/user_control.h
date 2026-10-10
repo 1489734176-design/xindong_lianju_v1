@@ -124,6 +124,8 @@ extern User_list_Struct user_list;
 extern Machine_ERROR_HOLD machine_error_hold;
 void user_direction_handle(void);
 void motor_on_off_control(void);
+extern volatile uint8_t safety_stop_latched;
+uint8_t motor_safety_poll(void);
 void user_state_control(void);
 void user_oc_handle(void);
 void Mos_overload_handle(void);

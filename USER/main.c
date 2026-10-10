@@ -114,7 +114,15 @@ int main(void)
 
 		mc_init();
 		CurrentOffsetCalibration();//放user_para_init()完后
-		mose_check();	//放user_para_init()完后
+        if(!motor_safety_poll())
+        {
+            TIM_CtrlPWMOutputs(TIM1, DISABLE);
+            Stop_Motor();
+            Bsp_Pwm_Init();
+            PwmOutputsEnable();
+            mose_check();
+        }
+        motor_safety_poll();	//放user_para_init()完后
 		systick_delay_us(1001);
 		read_user_data();//放user_para_init()完后
 	
@@ -129,14 +137,16 @@ int main(void)
 		Volt_Handler();
 		Volt_Handler();
 		Volt_Handler();
+#if LED_PA14_EN
 		for(i=0;i<5;i++)
 		{
 			LedSoc_Run(user_list.VBus_Vx100,0,1);//电量初始化
 		}
+#endif
 		for(i=0;i<20;i++) 
 		{
 			motor_on_off_control();
-			systick_delay_us(500);
+			systick_delay_us(1000);
 		}
 //		user_list.gears_level=2;
     while (1)
@@ -160,7 +170,10 @@ int main(void)
 				error_hold_updata();
 				user_state_control();
 				UO_Led_Handler();
-				if(user_list.flag.bits.gToolEn)
+				if(!motor_safety_poll() && user_list.flag.bits.gToolEn &&
+                   machine_error_hold.userErr_hold.word == 0 &&
+                   machine_error_hold.MC_error_hold.word == 0 &&
+                   user_list.userErr.word == 0 && mc_core_list.MC_error.word == 0)
 				{
 					mc_core_list.motor_en=1;
 				
@@ -171,11 +184,12 @@ int main(void)
 				}
 //				GPIO_Toggle(GPIOA,GPIO_Pin_4);
 //				GPIO_SetBits(GPIOA,GPIO_Pin_4);
-				if(mc_core_list.ipd_star_flag==1)
+				if(mc_core_list.ipd_star_flag==1 && !motor_safety_poll())
 				{
 				
-					ipd_detect();
-					mc_core_list.ipd_star_flag=0;
+                ipd_detect();
+                mc_core_list.ipd_star_flag=0;
+                motor_safety_poll();
 				}
 				
 				

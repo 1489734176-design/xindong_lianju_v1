@@ -58,9 +58,9 @@
 .\objects\mm32g0001_it.o: ..\MC_CORE\mc_core.h
 .\objects\mm32g0001_it.o: ..\USER\board.h
 .\objects\mm32g0001_it.o: D:\Users\mym02\AppData\Local\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\mm32g0001_it.o: ..\USER\parameter.h
 .\objects\mm32g0001_it.o: ..\DRIVE\inc\drv_adc.h
 .\objects\mm32g0001_it.o: ..\USER\user_control.h
-.\objects\mm32g0001_it.o: ..\USER\parameter.h
 .\objects\mm32g0001_it.o: ..\MOTOR_CONTROL\motor_control.h
 .\objects\mm32g0001_it.o: ..\DRIVE\inc\drv_pwm.h
 .\objects\mm32g0001_it.o: ..\USER\led.h

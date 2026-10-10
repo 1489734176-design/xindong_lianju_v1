@@ -63,3 +63,4 @@
 .\objects\user_control.o: ..\USER\flash_data_save.h
 .\objects\user_control.o: ..\MOTOR_CONTROL\motor_config.h
 .\objects\user_control.o: ..\SYS\systick.h
+.\objects\user_control.o: ..\DRIVE\inc\drv_pwm.h

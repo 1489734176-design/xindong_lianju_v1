@@ -6,12 +6,16 @@
 #include "flash_data_save.h"
 #include "motor_config.h"
 #include "systick.h"
+#include "drv_pwm.h"
 u32 PI_sum_i=0;
 u32 PI_p=0;
 u32	pwm_duty_aim_PI_OUT=0;
 User_list_Struct user_list;
 
 Machine_ERROR_HOLD machine_error_hold;
+volatile uint8_t safety_stop_latched = 0;
+static volatile uint8_t safety_release_count = 0;
+static volatile uint8_t safety_restart_ready = 0;
 
 void user_para_init(void)
 {
@@ -976,32 +980,129 @@ void user_WrenchKey_Handler(void)
 	
 
 }
+uint8_t motor_safety_poll(void)
+{
+    uint32_t primask;
+    uint8_t pressed = SAFETY_PRESSED();
+    if(!pressed && !safety_stop_latched)
+    {
+        return 0;
+    }
+
+    primask = __get_PRIMASK();
+    __disable_irq();
+    if(pressed)
+    {
+        safety_stop_latched = 1;
+        safety_restart_ready = 0;
+        safety_release_count = 0;
+    }
+    if(safety_stop_latched)
+    {
+        TIM_CtrlPWMOutputs(TIM1, DISABLE);
+        Stop_Motor();
+        Bsp_Pwm_Low();
+        TIM_ITConfig(TIM14, TIM_IT_Update, DISABLE);
+        TIM_ClearITPendingBit(TIM14, TIM_IT_Update);
+        mc_core_list.motor_en = 0;
+        mc_core_list.ipd_star_flag = 0;
+        mc_core_list.motor_bemf_runing = 0;
+        mc_core_list.mc_moving = 0;
+        mc_core_list.bldc_bemf_detected = 0;
+        mc_core_list.pwm_actual_runing_data = 0;
+        motor_control_list.pwm_duty_virtual = 0;
+        motor_control_list.bldc_state = MOTOR_STOP;
+    }
+    __set_PRIMASK(primask);
+    return safety_stop_latched;
+}
+
 void motor_on_off_control(void)
 {
-	
- static 	u8 gToolTrigger_off_count=0;
-	static 	u8 gToolTrigger_on_count=0;
-//		user_list.flag.bits.gToolTrigger=1;
-	if(user_list.on_start_adc <(TRG_ON_ADC-50))
-	{
-		gToolTrigger_off_count++;
-		gToolTrigger_on_count=0;
-		if(gToolTrigger_off_count>10)
-		{
-			user_list.flag.bits.gToolTrigger=0;
-		}
-	
-	}
-	if(user_list.on_start_adc >TRG_ON_ADC)
-	{
-				gToolTrigger_off_count=0;
-	   	gToolTrigger_on_count++;
-			if(gToolTrigger_on_count>10)
-			{
-			user_list.flag.bits.gToolTrigger=1;
-			}
-	}
+    static uint8_t trigger_off_count = 0;
+    static uint8_t trigger_on_count = 0;
+    uint8_t pressed;
+    uint8_t released;
+    uint32_t primask = __get_PRIMASK();
 
+    /* Serialize release/repress qualification with ISR safety trips. */
+    __disable_irq();
+    motor_safety_poll();
+#if ON_OFF_DIGITAL_EN
+    pressed = (GPIO_ReadInputDataBit(ON_START_PORT, ON_START_PIN) == Bit_RESET);
+    released = !pressed;
+#else
+    pressed = (user_list.on_start_adc > TRG_ON_ADC);
+    released = (user_list.on_start_adc < TRG_OFF_ADC);
+#endif
+    if(released)
+    {
+        trigger_on_count = 0;
+        if(trigger_off_count < ON_OFF_DEBOUNCE_MS)
+        {
+            trigger_off_count++;
+        }
+        if(trigger_off_count >= ON_OFF_DEBOUNCE_MS)
+        {
+            user_list.flag.bits.gToolTrigger = 0;
+        }
+    }
+    else if(pressed)
+    {
+        trigger_off_count = 0;
+        if(trigger_on_count < ON_OFF_DEBOUNCE_MS)
+        {
+            trigger_on_count++;
+        }
+        if(trigger_on_count >= ON_OFF_DEBOUNCE_MS)
+        {
+            user_list.flag.bits.gToolTrigger = 1;
+        }
+    }
+    else
+    {
+        /* Keep ADC hysteresis; debounce samples must be consecutive. */
+        trigger_off_count = 0;
+        trigger_on_count = 0;
+    }
+
+    if(safety_stop_latched)
+    {
+        if(!SAFETY_PRESSED() && released)
+        {
+            if(safety_release_count < ON_OFF_DEBOUNCE_MS)
+            {
+                safety_release_count++;
+            }
+            if(safety_release_count >= ON_OFF_DEBOUNCE_MS)
+            {
+                safety_restart_ready = 1;
+            }
+        }
+        else
+        {
+            safety_release_count = 0;
+        }
+        if(safety_restart_ready && pressed &&
+           trigger_on_count >= ON_OFF_DEBOUNCE_MS)
+        {
+            /* A press during another fault is consumed, not deferred. */
+            safety_restart_ready = 0;
+            if(!SAFETY_PRESSED() && user_list.userErr.word == 0 &&
+               mc_core_list.MC_error.word == 0 &&
+               machine_error_hold.userErr_hold.word == 0 &&
+               machine_error_hold.MC_error_hold.word == 0)
+            {
+                TIM_CtrlPWMOutputs(TIM1, DISABLE);
+                Stop_Motor();
+                safety_stop_latched = 0;
+                Bsp_Pwm_Init();
+                PwmOutputsEnable();
+            }
+        }
+        motor_safety_poll();
+    }
+    __set_PRIMASK(primask);
 }
 
 void error_hold_updata(void)
@@ -1013,6 +1114,14 @@ void error_hold_updata(void)
 
 void user_state_control(void)
 {
+    if(safety_stop_latched)
+    {
+        user_list.flag.bits.gToolEn = 0;
+        if(user_list.user_state == TOOL_RUN)
+        {
+            user_list.user_state = TOOL_STOP;
+        }
+    }
 				switch(user_list.user_state)
 				{
 					case TOOL_STOP:
@@ -1033,7 +1142,10 @@ void user_state_control(void)
 										user_list.flag.bits.gAutoStop =0;
 									}
 						}
-						else if(user_list.flag.bits.gToolTrigger)
+						else if(user_list.flag.bits.gToolTrigger && !safety_stop_latched &&
+                                machine_error_hold.MC_error_hold.word == 0 &&
+                                machine_error_hold.userErr_hold.word == 0 &&
+                                mc_core_list.MC_error.word == 0 && user_list.userErr.word == 0)
 						{
 						
 								user_list.flag.bits.gToolEn=1;
@@ -1061,7 +1173,7 @@ void user_state_control(void)
 									{
 									
 										machine_error_hold.userErr_hold.bits.gIBusAcmpOCP=0;
-										TIM_CtrlPWMOutputs(TIM1, ENABLE);
+										PwmOutputsEnable();
 									}
 //									mc_core_list.MC_error.word=0;
 //									machine_error_hold.MC_error_hold.word=0;
@@ -1122,10 +1234,10 @@ void user_state_control(void)
 							{
 									
 									machine_error_hold.userErr_hold.bits.gIBusAcmpOCP=0;
-									TIM_CtrlPWMOutputs(TIM1, ENABLE);
+									PwmOutputsEnable();
 							}
 						
-							if(user_list.flag.bits.gToolTrigger)
+							if(user_list.flag.bits.gToolTrigger && !safety_stop_latched)
 							{
 									if(machine_error_hold.MC_error_hold.word!=0||machine_error_hold.userErr_hold.word!=0)
 									{
@@ -1147,7 +1259,7 @@ void user_state_control(void)
 							{
 									
 									machine_error_hold.userErr_hold.bits.gIBusAcmpOCP=0;
-									TIM_CtrlPWMOutputs(TIM1, ENABLE);
+									PwmOutputsEnable();
 							}
 						
 							}

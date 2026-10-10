@@ -27,6 +27,16 @@
 
 #define  SLEEP_TIME                 				15000ul//10000   
 #define LED_SCAN_EN       (1)
+#define LED_PA14_EN       (0) /* PA14 belongs to the safety switch. */
+#if LED_PA14_EN
+#error PA14 LED drive conflicts with the safety switch
+#endif
+
+#ifndef ON_OFF_DIGITAL_EN
+#define ON_OFF_DIGITAL_EN (1) /* 1: low-active PB0 GPIO; 0: original PB0 ADC. */
+#endif
+#define ON_OFF_DEBOUNCE_MS (10)
+#define TRG_OFF_ADC       (TRG_ON_ADC - 50)
 
 #define PWM_DUTY_GEARS1    (u32)(32768*0.6f)    
 #define PWM_DUTY_GEARS2    (u32)(32768*0.8f) 

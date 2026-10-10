@@ -11,7 +11,7 @@
 #define SET_CCR4_VAL(Value)         WRITE_REG(TIM1->CCR4, Value)
 
 #define DISABLE_PWMOUT()            CLEAR_BIT(TIM1->BDTR, TIM_BDTR_MOE_Msk)
-#define ENABLE_PWMOUT()             SET_BIT(TIM1->BDTR, TIM_BDTR_MOE_Msk)
+#define ENABLE_PWMOUT()             PwmOutputsEnable()
 
 #define READ_TIM1_UPDATE_FLAG()     READ_BIT(TIM1->SR, TIM_IT_Update)
 #define CLEAN_TIM1_UPDATE_FLAG()    CLEAR_BIT(TIM1->SR, TIM_IT_Update)
@@ -62,6 +62,7 @@ void UVWL_HOffLPwm(void );
 
 void Start_Motor(void);
 void Stop_Motor(void);
+void PwmOutputsEnable(void);
 
 void Brake_Motor(void);
 void PwmDutyUpdate(uint16_t u16Duty);

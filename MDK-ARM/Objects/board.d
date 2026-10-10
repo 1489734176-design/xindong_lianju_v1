@@ -55,9 +55,9 @@
 .\objects\board.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_tim.h
 .\objects\board.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_usart.h
 .\objects\board.o: ..\Device\MM32G0001\HAL_Lib\inc\hal_uid.h
+.\objects\board.o: ..\USER\parameter.h
 .\objects\board.o: ..\DRIVE\inc\drv_adc.h
 .\objects\board.o: ..\DRIVE\inc\drv_pwm.h
-.\objects\board.o: ..\USER\parameter.h
 .\objects\board.o: ..\USER\led.h
 .\objects\board.o: ..\USER\user_control.h
 .\objects\board.o: ..\MC_CORE\mc_core.h

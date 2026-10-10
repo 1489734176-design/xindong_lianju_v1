@@ -48,8 +48,41 @@ void Bsp_Adc_Init(void)
     GPIO_InitStructure.GPIO_Pin     = BEMF_W_PIN;
     GPIO_Init(BEMF_W_PORT, &GPIO_InitStructure);
 		
-		 GPIO_InitStructure.GPIO_Pin     = ON_START_PIN;
-		 GPIO_Init(ON_START_PORT, &GPIO_InitStructure);
+#if ON_OFF_DIGITAL_EN
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+#endif
+    GPIO_InitStructure.GPIO_Pin = ON_START_PIN;
+    GPIO_Init(ON_START_PORT, &GPIO_InitStructure);
+}
+
+static void Bsp_Safety_Init(void)
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+    RCC_AHBPeriphClockCmd(RCC_AHBENR_GPIOA, ENABLE);
+    GPIO_PinAFConfig(SAFETY_PORT, SAFETY_PIN_SOURCE, GPIO_AF_7);
+    GPIO_StructInit(&GPIO_InitStructure);
+    GPIO_InitStructure.GPIO_Pin = SAFETY_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_Init(SAFETY_PORT, &GPIO_InitStructure);
+    if(SAFETY_PRESSED())
+    {
+        safety_stop_latched = 1;
+    }
+}
+
+void Bsp_Pwm_Low(void)
+{
+    /* Board-specific: PA0/5/6/8/9/10 are the six gate inputs. */
+    GPIO_ResetBits(GPIOA, BLDC1_UH_PIN | BLDC1_VH_PIN | BLDC1_WH_PIN |
+                         BLDC1_UL_PIN | BLDC1_VL_PIN | BLDC1_WL_PIN);
+    MODIFY_REG(GPIOA->CRL,
+        GPIO_CRL_MODE0 | GPIO_CRL_CNF0 | GPIO_CRL_MODE5 | GPIO_CRL_CNF5 |
+        GPIO_CRL_MODE6 | GPIO_CRL_CNF6,
+        GPIO_CRL_MODE0_0 | GPIO_CRL_MODE5_0 | GPIO_CRL_MODE6_0);
+    MODIFY_REG(GPIOA->CRH,
+        GPIO_CRH_MODE8 | GPIO_CRH_CNF8 | GPIO_CRH_MODE9 | GPIO_CRH_CNF9 |
+        GPIO_CRH_MODE10 | GPIO_CRH_CNF10,
+        GPIO_CRH_MODE8_0 | GPIO_CRH_MODE9_0 | GPIO_CRH_MODE10_0);
 }
 
 void Bsp_Pwm_Init(void)
@@ -239,8 +272,9 @@ void EN_Port_Out_L(void)
 void Bsp_Gpio_Init(void)
 {
 	
-	Bsp_Pwm_Init();
-	Bsp_Adc_Init();
+    Bsp_Safety_Init();
+    Bsp_Pwm_Low();
+    Bsp_Adc_Init();
 	led_init();
 //	Bsp_dir_init();
 	Bsp_EN_Port_init();

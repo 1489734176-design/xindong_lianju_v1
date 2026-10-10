@@ -14,12 +14,14 @@ void LED4_BRIGHT(void);
 void LED5_BRIGHT(void);
 void LED6_BRIGHT(void);
 
+#if LED_PA14_EN
 #define LED1_BRIGHT_MAP LED5_BRIGHT()
 #define LED2_BRIGHT_MAP LED4_BRIGHT()
 #define LED3_BRIGHT_MAP LED6_BRIGHT()
 #define LED4_BRIGHT_MAP LED3_BRIGHT()
 #define LED5_BRIGHT_MAP LED2_BRIGHT()
 #define LED6_BRIGHT_MAP LED1_BRIGHT()
+#endif
 
 
 #define LED_ERROR_ON                	         {LED1 = LED2 = LED3 = led_on;}
@@ -33,15 +35,20 @@ void led_init(void)
     RCC_AHBPeriphClockCmd(RCC_AHBENR_GPIOA, ENABLE);
 
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource13, GPIO_AF_7);
+#if LED_PA14_EN
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource14, GPIO_AF_7);
+#endif
 
     GPIO_StructInit(&GPIO_InitStruct);
-    GPIO_InitStruct.GPIO_Pin   = LED_PIN1 | LED_PIN2|LED_PIN3;
+    GPIO_InitStruct.GPIO_Pin = LED_PIN1 | LED_PIN2;
+#if LED_PA14_EN
+    GPIO_InitStruct.GPIO_Pin |= LED_PIN3;
+#endif
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_High;
     GPIO_InitStruct.GPIO_Mode  = GPIO_Mode_Out_PP;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_WriteBit(GPIOA, LED_PIN1 | LED_PIN2|LED_PIN3, Bit_SET);
+    GPIO_WriteBit(GPIOA, GPIO_InitStruct.GPIO_Pin, Bit_SET);
 
 
 
@@ -103,7 +110,9 @@ void LED1_BRIGHT(void)
 {
 		LED_PIN1_OUT();	
 		LED_PIN2_OUT();
+#if LED_PA14_EN
 		LED_PIN3_IN();
+#endif
 	
 		LED_PIN1_HIGHT();
 		LED_PIN2_LOW();
@@ -113,7 +122,9 @@ void LED2_BRIGHT(void)
 {
 		LED_PIN1_OUT();	
 		LED_PIN2_OUT();
+#if LED_PA14_EN
 		LED_PIN3_IN();
+#endif
 	
 		LED_PIN1_LOW();
 		LED_PIN2_HIGHT();
@@ -121,6 +132,7 @@ void LED2_BRIGHT(void)
 }
 
 
+#if LED_PA14_EN
 void LED3_BRIGHT(void)
 {
 		LED_PIN1_OUT();	
@@ -228,8 +240,43 @@ void LED_Scan(void)
 
 
 
+#else
+void LED_Scan(void)
+{
+    static uint8_t direction = 0;
+    LED_PIN1_IN();
+    LED_PIN2_IN();
+    direction ^= 1;
+    if(LED1)
+    {
+        if(direction)
+        {
+            LED1_BRIGHT();
+        }
+        else
+        {
+            LED2_BRIGHT();
+			
+        }
+    }
+}
+#endif
+
 void UO_Led_Handler(void)
-{	
+{
+#if !LED_PA14_EN
+    if(user_list.user_state != TOOL_POWER_DOWN &&
+       LedError_Control() && user_list.flag.bits.gToolTrigger)
+    {
+        LedError_Run();
+    }
+    else
+    {
+        ledData.Word = 0;
+        user_led_control.LedDeal = 0;
+        user_led_control.LedRunTimes = 0;
+    }
+#else
 
 
 	if(user_list.user_state == TOOL_POWER_DOWN)
@@ -333,6 +380,7 @@ void UO_Led_Handler(void)
 	
 
 	
+#endif
 }
 
 
